@@ -153,7 +153,7 @@ class Surreal_GAN_train():
 							stop = 'yes'
 						else:
 							stop = 'no'
-						if save_epoch[save_epoch_index] not in agreement_f['epoch']:
+						if save_epoch[save_epoch_index] not in agreement_f['epoch'].values:
 							agreement_f.loc[len(agreement_f)] = {'epoch': save_epoch[save_epoch_index],'Rindices_corr':(np.mean(dimension_corr)+np.mean(difference_corr))/2, 'dimension_corr': np.mean(dimension_corr), 'difference_corr':np.mean(difference_corr),\
 								'best_Rindices_corr':Rindices_corr[best_model],'best_dimension_corr':dimension_corr[best_model],'best_difference_corr':difference_corr[best_model],'best_model':best_model,'stop':stop}
 							agreement_f.to_csv(os.path.join(save_dir,"model_agreements.csv"),index=False)

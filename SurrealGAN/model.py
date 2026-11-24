@@ -221,7 +221,7 @@ class SurrealGAN(object):
 	def save(self, save_dir, epoch, chk_name):
 		chk_path = os.path.join(save_dir, chk_name)
 		if os.path.exists(chk_path):
-			checkpoint = torch.load(chk_path)
+			checkpoint = torch.load(chk_path, weights_only=False)
 		else:
 			checkpoint = {}
 			checkpoint.update(self.opt)
@@ -252,7 +252,7 @@ class SurrealGAN(object):
 	def load(self, chk_path, epoch):
 		for i in range(100000):
 			try:
-				checkpoint_all_epoch = torch.load(chk_path)
+				checkpoint_all_epoch = torch.load(chk_path, weights_only=False)
 			except Exception as e:
 				continue
 			else:

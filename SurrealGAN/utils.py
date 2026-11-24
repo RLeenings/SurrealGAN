@@ -169,7 +169,7 @@ def check_multimodel_agreement(data,covar,output_dir,epoch,repetition,npattern):
 		if os.path.exists(path):
 			for i in range(100000):
 				try:
-					load_dic = torch.load(path)
+					load_dic = torch.load(path, weights_only=False)
 				except Exception as e:
 					pass
 				else:

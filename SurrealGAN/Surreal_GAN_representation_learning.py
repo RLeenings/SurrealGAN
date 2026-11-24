@@ -75,7 +75,7 @@ def representation_result(output_dir, npattern, data, final_saving_epoch, saving
 			validation_data = parse_validation_data(data, covariate,model.opt.correction_variables,model.opt.normalization_variables)[1]
 			r_indices = model.predict_rindices(validation_data)	
 		else:
-			raise Exception("At least 10 trained models are required (repetition number need to be at least 10)")
+			raise Exception("At least 4 trained models are required (repetition number needs to be at least 4; 20 or more is recommended)")
 	else:
 		raise Exception("Waiting for other repetitions to finish to derive the final R-indices")
 	return np.array(r_indices), best_row['best_dimension_corr'], best_row['best_difference_corr'],  best_row['dimension_corr'], best_row['difference_corr'], best_row['epoch'], best_model_dir
@@ -160,3 +160,4 @@ def repetitive_representation_learning(data, npattern, repetition, fraction, fin
 	
 	pt_data.to_csv(os.path.join(output_dir,'representation_result.csv'), index = False)
 	print('****** Surreal-GAN Representation Learning finished ******')
+	return pt_data

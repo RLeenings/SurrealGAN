@@ -213,9 +213,12 @@ class SurrealGAN(object):
 	def predict_Y(self, x, z):
 		return self.netMapping.forward(x, z).detach().numpy()
 
+	## return the learned npattern x npattern correlation matrix of the Gaussian copula over the latent
+	## variables (the correlation of the underlying normal variables, not the Pearson correlation of r-indices)
 	def get_corr(self):
-		scale_tril = construct_scale_tril(self.phi,self.opt.npattern)
-		return
+		with torch.no_grad():
+			scale_tril = construct_scale_tril(self.phi,self.opt.npattern)
+			return torch.matmul(scale_tril, scale_tril.T).numpy()
 
 	## save checkpoint 
 	def save(self, save_dir, epoch, chk_name):

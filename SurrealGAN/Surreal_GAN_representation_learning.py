@@ -38,6 +38,18 @@ def apply_saved_model(model_dir, data, epoch, covariate=None):
 	model.predict_rindices(validation_data)
 	return model.predict_rindices(validation_data)
 
+def get_saved_model_correlation(model_dir, epoch):
+	"""
+	Learned correlation structure among the R-indices of one saved model
+	Args:
+		model_dir: string, path to the saved model (e.g. 'path to selected model' in the output file)
+		epoch: int, saved epoch to use (e.g. 'best epoch' in the output file)
+	Returns: npattern x npattern correlation matrix of the Gaussian copula over the latent variables
+	"""
+	model = SurrealGAN()
+	model.load(model_dir, epoch)
+	return model.get_corr()
+
 def representation_result(output_dir, npattern, data, final_saving_epoch, saving_freq, repetition, covariate=None):
 	"""
 	Function used for derive representation results from several saved models

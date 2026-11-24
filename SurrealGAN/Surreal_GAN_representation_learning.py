@@ -123,10 +123,12 @@ def repetitive_representation_learning(data, npattern, repetition, fraction, fin
 		stop_repetition = repetition
 	for i in range(start_repetition, stop_repetition):
 		print('****** Starting training of Repetition '+str(i)+" ******")
-		converge = Surreal_GAN_model.train(data, covariate, output_dir, repetition, random_seed=i, data_fraction = fraction, verbose = verbose)
+		attempt = 0
+		converge = Surreal_GAN_model.train(data, covariate, output_dir, repetition, random_seed=i, data_fraction = fraction, verbose = verbose, attempt = attempt)
 		while not converge:
 			print("****** Model not converged at max interation, Start retraining ******")
-			converge = Surreal_GAN_model.train(data, covariate, output_dir, repetition, random_seed=i, data_fraction = fraction, verbose = verbose)
+			attempt += 1
+			converge = Surreal_GAN_model.train(data, covariate, output_dir, repetition, random_seed=i, data_fraction = fraction, verbose = verbose, attempt = attempt)
 
 	r_indices, selected_model_dimension_corr, selected_model_difference_corr, dimension_corr, difference_corr, best_epoch, selected_model_dir = representation_result(output_dir, npattern, data, final_saving_epoch, saving_freq, repetition, covariate = covariate)
 	

@@ -71,8 +71,11 @@ class Surreal_GAN_train():
 		return cn_train_dataset, pt_train_dataset, cn_eval_dataset, pt_eval_dataset, correction_variables, normalization_variables
 
 
-	def train(self, data, covariate, save_dir, repetition, random_seed=0, data_fraction=1, verbose=True):
-		if verbose: 
+	def train(self, data, covariate, save_dir, repetition, random_seed=0, data_fraction=1, verbose=True, attempt=0):
+		# seed torch (weight init, latent sampling) per repetition and retry attempt, so that runs are
+		# reproducible and a retry after non-convergence does not repeat the identical run
+		torch.manual_seed(int(np.random.SeedSequence([random_seed, attempt]).generate_state(1)[0]))
+		if verbose:
 			result_f = open("%s/results.txt" % save_dir, 'w')
 
 		cn_train_dataset, pt_train_dataset, eval_X, eval_Y, correction_variables, normalization_variables = self.parse_data(data, covariate, random_seed, data_fraction)

@@ -67,8 +67,31 @@ def apply_data_normalization(data, normalization_variables):
 	normalized_data = 1+(data-normalization_variables['cn_mean'])/(10*normalization_variables['cn_std'])
 	return normalized_data
 
+def align_covariate(data, covariate):
+	"""
+	Reorder covariate rows to match data rows by participant_id, so that covariate correction
+	never pairs a participant's ROIs with another participant's covariates.
+	"""
+	if covariate is None:
+		return None
+	for name, df in (('data', data), ('covariate', covariate)):
+		duplicated = df['participant_id'][df['participant_id'].duplicated()]
+		if len(duplicated) > 0:
+			raise ValueError("duplicate participant_id in %s: %s" % (name, list(duplicated[:5])))
+	missing = set(data['participant_id']) - set(covariate['participant_id'])
+	if missing:
+		raise ValueError("%d participant(s) in data have no covariate row, e.g. %s" % (len(missing), sorted(missing)[:5]))
+	aligned = covariate.set_index('participant_id').reindex(data['participant_id'].values)
+	aligned.index.name = 'participant_id'
+	aligned = aligned.reset_index()
+	mismatch = aligned['diagnosis'].values != data['diagnosis'].values
+	if mismatch.any():
+		raise ValueError("diagnosis differs between data and covariate for participant(s) %s" % list(aligned['participant_id'][mismatch][:5]))
+	return aligned
+
 def parse_train_data(data, covariate, random_seed, data_fraction, batch_size):
-	cn_data = data.loc[data['diagnosis'] == -1].drop(['participant_id','diagnosis'], axis=1).values
+	covariate = align_covariate(data, covariate)
+	cn_data =data.loc[data['diagnosis'] == -1].drop(['participant_id','diagnosis'], axis=1).values
 	pt_data = data.loc[data['diagnosis'] == 1].drop(['participant_id','diagnosis'], axis=1).values
 	correction_variables = None
 	if covariate is not None:
@@ -90,7 +113,8 @@ def parse_train_data(data, covariate, random_seed, data_fraction, batch_size):
 	return cn_train_dataset, pt_train_dataset, correction_variables, normalization_variables
 
 def parse_validation_data(data, covariate, correction_variables, normalization_variables):
-	cn_data = data.loc[data['diagnosis'] == -1].drop(['participant_id','diagnosis'], axis=1).values
+	covariate = align_covariate(data, covariate)
+	cn_data =data.loc[data['diagnosis'] == -1].drop(['participant_id','diagnosis'], axis=1).values
 	pt_data = data.loc[data['diagnosis'] == 1].drop(['participant_id','diagnosis'], axis=1).values
 	if cn_data.shape[0] != 0:
 		if correction_variables is not None:

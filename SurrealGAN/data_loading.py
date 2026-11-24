@@ -18,7 +18,9 @@ class PTIterator(object):
         self.data = PT_data.astype('float32')[indices]
         self.num_samples = self.data.shape[0]
         self.batch_size = batch_size
-        self.n_batches = int(self.num_samples / self.batch_size)
+        if self.num_samples < self.batch_size:
+            raise ValueError("PT sample (%d) is smaller than batch size (%d)" % (self.num_samples, self.batch_size))
+        self.n_batches = self.num_samples // self.batch_size
         self.reset()
 
     def __iter__(self):
@@ -29,7 +31,7 @@ class PTIterator(object):
         self.batch_idx = 0
 
     def __next__(self):
-        if self.batch_idx == self.n_batches-1:
+        if self.batch_idx == self.n_batches:
             self.reset()
             raise StopIteration
 
@@ -51,7 +53,9 @@ class CNIterator(object):
         self.data = CN_data.astype('float32')[indices]
         self.num_samples = self.data.shape[0]
         self.batch_size = batch_size
-        self.n_batches = int(self.num_samples / self.batch_size)
+        if self.num_samples < self.batch_size:
+            raise ValueError("CN sample (%d) is smaller than batch size (%d)" % (self.num_samples, self.batch_size))
+        self.n_batches = self.num_samples // self.batch_size
         self.reset()
 
     def __iter__(self):

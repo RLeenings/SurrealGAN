@@ -1,4 +1,5 @@
 import os
+import warnings
 import numpy as np
 import scipy
 import pandas as pd
@@ -75,6 +76,15 @@ def parse_train_data(data, covariate, random_seed, data_fraction, batch_size):
 		pt_cov = covariate.loc[covariate['diagnosis'] == 1].drop(['participant_id','diagnosis'], axis=1).values
 		cn_data,pt_data, correction_variables = Covariate_correction(cn_data,cn_cov,pt_data,pt_cov)
 	normalized_cn_data, normalized_pt_data, normalization_variables = Data_normalization(cn_data,pt_data)
+	# CN and PT batches must have the same size (the copula weights computed from the CN
+	# batch also weight the PT discriminator loss), and each group needs at least one full batch.
+	n_cn, n_pt = int(data_fraction*cn_data.shape[0]), int(data_fraction*pt_data.shape[0])
+	if min(n_cn, n_pt) == 0:
+		raise ValueError("training data needs both CN (diagnosis -1) and PT (diagnosis 1) participants; got %d CN and %d PT" % (n_cn, n_pt))
+	if min(n_cn, n_pt) < batch_size:
+		warnings.warn("batch size %d is larger than the CN (%d) or PT (%d) training sample; using batch size %d instead"
+			% (batch_size, n_cn, n_pt, min(n_cn, n_pt)))
+		batch_size = min(n_cn, n_pt)
 	cn_train_dataset = CNIterator(normalized_cn_data, random_seed, data_fraction, batch_size)
 	pt_train_dataset = PTIterator(normalized_pt_data, random_seed, data_fraction, batch_size)
 	return cn_train_dataset, pt_train_dataset, correction_variables, normalization_variables

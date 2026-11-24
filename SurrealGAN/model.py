@@ -45,10 +45,10 @@ def sample_z_cn(real_X, npattern):
 def criterion_GAN(pred, target_is_real, prob):
 	if target_is_real:
 		target_var = Variable(pred.data.new(pred.shape[0]).long().fill_(0.))
-		loss=(F.cross_entropy(pred, target_var, reduce=False)*prob).mean()
+		loss=(F.cross_entropy(pred, target_var, reduction="none")*prob).mean()
 	else:
 		target_var = Variable(pred.data.new(pred.shape[0]).long().fill_(1.))
-		loss = (F.cross_entropy(pred, target_var, reduce=False)*prob).mean()
+		loss = (F.cross_entropy(pred, target_var, reduction="none")*prob).mean()
 	return loss
 
 def criterion_orthogonal(change_batch_sum, npattern):

@@ -35,6 +35,9 @@ def Covariate_correction(cn_data,cn_cov,pt_data,pt_cov):
 	"""
 	min_cov = np.amin(cn_cov, axis=0)
 	max_cov = np.amax(cn_cov, axis=0)
+	if np.any(max_cov == min_cov):
+		raise ValueError("covariate column(s) %s are constant among CN participants and cannot be used for correction"
+			% list(np.where(max_cov == min_cov)[0]))
 	pt_cov = (pt_cov-min_cov)/(max_cov-min_cov)
 	cn_cov = (cn_cov-min_cov)/(max_cov-min_cov)
 	beta = np.transpose(LinearRegression().fit(cn_cov, cn_data).coef_)
@@ -53,6 +56,9 @@ def Data_normalization(cn_data,pt_data):
 	"""
 	cn_mean = np.mean(cn_data,axis=0)
 	cn_std = np.std(cn_data,axis=0)
+	if np.any(cn_std == 0):
+		raise ValueError("ROI column(s) %s have zero variance among CN participants and cannot be normalized"
+			% list(np.where(cn_std == 0)[0]))
 	normalized_cn_data = 1+(cn_data-cn_mean)/(10*cn_std)
 	normalized_pt_data = 1+(pt_data-cn_mean)/(10*cn_std)
 	normalization_variables = {'cn_mean':cn_mean, 'cn_std':cn_std}

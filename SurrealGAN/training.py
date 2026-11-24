@@ -1,5 +1,7 @@
 import os
 import time
+import fcntl
+import contextlib
 import numpy as np
 import torch
 import pandas as pd
@@ -16,6 +18,16 @@ __version__ = "0.1.0"
 __maintainer__ = "Zhijian Yang"
 __email__ = "zhijianyang@outlook.com"
 __status__ = "Development"
+
+@contextlib.contextmanager
+def _agreement_lock(save_dir):
+	"""Exclusive lock around model_agreements.csv, which parallel repetitions update concurrently."""
+	with open(os.path.join(save_dir, "model_agreements.lock"), "w") as lock_f:
+		fcntl.flock(lock_f, fcntl.LOCK_EX)
+		try:
+			yield
+		finally:
+			fcntl.flock(lock_f, fcntl.LOCK_UN)
 
 class dotdict(dict):
 	"""dot.notation access to dictionary attributes"""
@@ -144,22 +156,23 @@ class Surreal_GAN_train():
 					res_str_list += ["*** Saving Criterion Satisfied ***"]
 					res_str = "\n".join(["-"*60] + res_str_list + ["-"*60])
 					agreement_list = check_multimodel_agreement(data, covariate, save_dir, save_epoch[save_epoch_index], repetition,self.opt.npattern)
-					if os.path.exists(os.path.join(save_dir,"model_agreements.csv")):
-						agreement_f = pd.read_csv(os.path.join(save_dir,"model_agreements.csv"))
-					else:
-						agreement_f = pd.DataFrame(columns = ['epoch','Rindices_corr','dimension_corr','difference_corr','best_Rindices_corr','best_dimension_corr','best_difference_corr','best_model','stop'])
-					if len(agreement_list)>0:
-						dimension_corr, difference_corr = agreement_list[1], agreement_list[0]
-						Rindices_corr = [(a + b)/2 for a, b in zip(dimension_corr, difference_corr)]
-						best_model = Rindices_corr.index(max(Rindices_corr))
-						if (agreement_f.iloc[:-2]['Rindices_corr'].max()-self.opt.early_stop_thresh)>max(agreement_f.iloc[-2:]['Rindices_corr'].max(),(np.mean(dimension_corr)+np.mean(difference_corr))/2):
-							stop = 'yes'
+					with _agreement_lock(save_dir):  # parallel repetitions read-modify-write the same file
+						if os.path.exists(os.path.join(save_dir,"model_agreements.csv")):
+							agreement_f = pd.read_csv(os.path.join(save_dir,"model_agreements.csv"))
 						else:
-							stop = 'no'
-						if save_epoch[save_epoch_index] not in agreement_f['epoch'].values:
-							agreement_f.loc[len(agreement_f)] = {'epoch': save_epoch[save_epoch_index],'Rindices_corr':(np.mean(dimension_corr)+np.mean(difference_corr))/2, 'dimension_corr': np.mean(dimension_corr), 'difference_corr':np.mean(difference_corr),\
-								'best_Rindices_corr':Rindices_corr[best_model],'best_dimension_corr':dimension_corr[best_model],'best_difference_corr':difference_corr[best_model],'best_model':best_model,'stop':stop}
-							agreement_f.to_csv(os.path.join(save_dir,"model_agreements.csv"),index=False)
+							agreement_f = pd.DataFrame(columns = ['epoch','Rindices_corr','dimension_corr','difference_corr','best_Rindices_corr','best_dimension_corr','best_difference_corr','best_model','stop'])
+						if len(agreement_list)>0:
+							dimension_corr, difference_corr = agreement_list[1], agreement_list[0]
+							Rindices_corr = [(a + b)/2 for a, b in zip(dimension_corr, difference_corr)]
+							best_model = Rindices_corr.index(max(Rindices_corr))
+							if (agreement_f.iloc[:-2]['Rindices_corr'].max()-self.opt.early_stop_thresh)>max(agreement_f.iloc[-2:]['Rindices_corr'].max(),(np.mean(dimension_corr)+np.mean(difference_corr))/2):
+								stop = 'yes'
+							else:
+								stop = 'no'
+							if save_epoch[save_epoch_index] not in agreement_f['epoch'].values:
+								agreement_f.loc[len(agreement_f)] = {'epoch': save_epoch[save_epoch_index],'Rindices_corr':(np.mean(dimension_corr)+np.mean(difference_corr))/2, 'dimension_corr': np.mean(dimension_corr), 'difference_corr':np.mean(difference_corr),\
+									'best_Rindices_corr':Rindices_corr[best_model],'best_dimension_corr':dimension_corr[best_model],'best_difference_corr':difference_corr[best_model],'best_model':best_model,'stop':stop}
+								agreement_f.to_csv(os.path.join(save_dir,"model_agreements.csv"),index=False)
 					
 					if (agreement_f['stop'] == 'yes').any():
 						return True
